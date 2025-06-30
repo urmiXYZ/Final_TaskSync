@@ -16,16 +16,21 @@ type PersonalTask = {
 
 export default function PersonalTaskCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-
   const [tasks, setTasks] = useState<PersonalTask[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Form states for modal
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [dueDate, setDueDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [time, setTime] = useState('');
 
   // Fetch tasks from backend
   async function fetchTasks() {
     try {
       const res = await fetch("http://localhost:3001/personal-tasks", {
-  credentials: "include",
-});
+        credentials: "include",
+      });
 
       if (!res.ok) throw new Error('Failed to load tasks');
       const data: PersonalTask[] = await res.json();
@@ -38,18 +43,17 @@ export default function PersonalTaskCalendar() {
   useEffect(() => {
     fetchTasks();
   }, []);
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function onChangeHandler(
-  value: Date | Date[] | null | [Date | null, Date | null]
-) {
-  if (Array.isArray(value)) {
-    const firstDate = value.find((d) => d !== null) ?? null;
-    setSelectedDate(firstDate);
-  } else {
-    setSelectedDate(value);
-  }
-}
 
+  function onChangeHandler(
+    value: Date | Date[] | null | [Date | null, Date | null]
+  ) {
+    if (Array.isArray(value)) {
+      const firstDate = value.find((d) => d !== null) ?? null;
+      setSelectedDate(firstDate);
+    } else {
+      setSelectedDate(value);
+    }
+  }
 
   // Highlight days with tasks
   function tileClassName({ date, view }: { date: Date; view: string }) {
@@ -60,16 +64,9 @@ function onChangeHandler(
     return '';
   }
 
-const tasksForSelectedDate = selectedDate
-  ? tasks.filter(task => task.dueDate === format(selectedDate, 'yyyy-MM-dd'))
-  : [];
-
-
-  // Add Task modal form state
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [time, setTime] = useState('');
+  const tasksForSelectedDate = selectedDate
+    ? tasks.filter(task => task.dueDate === format(selectedDate, 'yyyy-MM-dd'))
+    : [];
 
   async function handleAddTask() {
     if (!title || !dueDate) {
@@ -77,14 +74,14 @@ const tasksForSelectedDate = selectedDate
       return;
     }
     try {
-  const res = await fetch('http://localhost:3001/personal-tasks', {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ title, description, dueDate, time }),
-  });
+      const res = await fetch('http://localhost:3001/personal-tasks', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title, description, dueDate, time }),
+      });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.message || 'Failed to add task');
@@ -112,18 +109,16 @@ const tasksForSelectedDate = selectedDate
         </button>
 
         <Calendar
-  onChange={(value) => onChangeHandler(value)}
-  value={selectedDate}
-  tileClassName={tileClassName}
-/>
-
+          onChange={onChangeHandler}
+          value={selectedDate}
+          tileClassName={tileClassName}
+        />
       </div>
 
       <div className="bg-white rounded-lg shadow-lg p-4 flex-1">
         <h2 className="text-lg font-semibold mb-2">
-  Tasks for {format(selectedDate ?? new Date(), 'PPP')}
-</h2>
-
+          Tasks for {format(selectedDate ?? new Date(), 'PPP')}
+        </h2>
 
         {tasksForSelectedDate.length === 0 ? (
           <p className="text-sm text-gray-500">No tasks scheduled.</p>
@@ -182,7 +177,6 @@ const tasksForSelectedDate = selectedDate
                 onChange={(e) => setTime(e.target.value)}
               />
             </div>
-
             <div className="flex justify-end gap-2 mt-4">
               <button className="btn" onClick={() => setShowAddModal(false)}>
                 Cancel

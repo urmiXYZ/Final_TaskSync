@@ -15,17 +15,18 @@ type User = {
   avatarUrl?: string;
   createdAt: string;
   isDisabled?: boolean | null;
+  latestSalary?: number;  // add this line
 };
+
 
 export default function UserManagementPage() {
 const {loading: authLoading } = useAuthGuard();
-
-  const [managers, setManagers] = useState<User[]>([]);
-  const [employees, setEmployees] = useState<User[]>([]);
+const [managers, setManagers] = useState<User[]>([]);
+const [employees, setEmployees] = useState<User[]>([]);
 const [dataLoading, setDataLoading] = useState(true);
 
-  const [error, setError] = useState<string | null>(null);
-  const [managersPage, setManagersPage] = useState(1);
+const [error, setError] = useState<string | null>(null);
+const [managersPage, setManagersPage] = useState(1);
 const [employeesPage, setEmployeesPage] = useState(1);
 const [showModal, setShowModal] = useState(false);
 const [modalRole, setModalRole] = useState<'manager' | 'employee' | null>(null);
@@ -215,7 +216,8 @@ if (debouncedSearchTerm.trim()) params.append("term", debouncedSearchTerm.trim()
   } finally {
     setDataLoading(false);
   }
-}, [
+},[
+  searchTerm,
   debouncedSearchTerm,
   startDate,
   endDate,
@@ -226,6 +228,7 @@ if (debouncedSearchTerm.trim()) params.append("term", debouncedSearchTerm.trim()
   setDataLoading,
   setError,
 ]);
+
 
 useEffect(() => {
   handleSearchAndFilter();
@@ -344,7 +347,7 @@ className={`join-item btn ${
   );
 };
 
-const fetchUsers = async () => {
+const fetchUsers = useCallback(async () => {
   try {
     setDataLoading(true);
     setError(null);
@@ -361,29 +364,52 @@ const fetchUsers = async () => {
     if (!resEmployees.ok) throw new Error('Failed to fetch employees');
     let employeesData: User[] = await resEmployees.json();
 
-    managersData = managersData.map(user => ({
-      ...user,
-      avatarUrl: user.avatarUrl ? `http://localhost:3001${user.avatarUrl}` : undefined,
-    })).sort((a, b) => a.id - b.id);
+    // Format avatar URLs and sort
+    managersData = managersData
+      .map((user) => ({
+        ...user,
+        avatarUrl: user.avatarUrl ? `http://localhost:3001${user.avatarUrl}` : undefined,
+      }))
+      .sort((a, b) => a.id - b.id);
 
-    employeesData = employeesData.map(user => ({
-      ...user,
-      avatarUrl: user.avatarUrl ? `http://localhost:3001${user.avatarUrl}` : undefined,
-    })).sort((a, b) => a.id - b.id);
+    employeesData = employeesData
+      .map((user) => ({
+        ...user,
+        avatarUrl: user.avatarUrl ? `http://localhost:3001${user.avatarUrl}` : undefined,
+      }))
+      .sort((a, b) => a.id - b.id);
 
-    setManagers(managersData);
-    setEmployees(employeesData);
-  } catch (err: unknown) {
-  console.error(err);
-  if (err instanceof Error) {
-    setError(err.message);
-  } else {
-    setError('An unexpected error occurred.');
+    // Attach latest salary to each user
+    const withSalaries = async (users: User[]) => {
+  return Promise.all(
+    users.map(async (user) => {
+      try {
+        const res = await fetch(`http://localhost:3001/salary/latest/${user.id}`, {
+          credentials: 'include',
+        });
+        const data = await res.json();
+        return { ...user, latestSalary: data.totalAmount ?? null };
+      } catch {
+        return { ...user, latestSalary: null };
+      }
+    })
+  );
+};
+
+
+    const enrichedManagers = await withSalaries(managersData);
+    const enrichedEmployees = await withSalaries(employeesData);
+
+    setManagers(enrichedManagers);
+    setEmployees(enrichedEmployees);
+  } catch (err) {
+    setError((err as Error).message || 'Unknown error');
+  } finally {
+    setDataLoading(false);
   }
-} finally {
-  setDataLoading(false);
-}
-}
+}, []);
+
+
 
 
 const handleClearFilters = () => {
@@ -404,6 +430,30 @@ useEffect(() => {
 
   if (dataLoading) return <DashboardLayout><div>Loading users...</div></DashboardLayout>;
   if (error) return <DashboardLayout><div className="text-red-600">Error: {error}</div></DashboardLayout>;
+
+const handleGenerateSalary = async (userId: number) => {
+  try {
+    const res = await fetch(`http://localhost:3001/salary/generate/${userId}`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || 'Failed to generate salary');
+    }
+
+    const data = await res.json();
+    toast.success(`Paid ৳${data.totalAmount} to user.`);
+    fetchUsers(); // Refresh user list if needed
+  } catch (error) {
+    console.error(error);
+    toast.error('Failed to pay salary');
+  }
+};
+
+
+
 
 const renderTable = (
   title: string,
@@ -427,55 +477,75 @@ const renderTable = (
               <th>Name</th>
               <th>Email</th>
               <th>Joining date</th>
+              <th>Salary</th>
               <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            {users.map((user, index) => (
-<tr
-  key={user.id}
-  className={`hover:bg-gray-100 ${
-  user.isDisabled ? 'bg-gray-200 text-gray-500 opacity-60' : ''
-}`}
+  {users.map((user, index) => (
+    <tr
+      key={user.id}
+      className={`hover:bg-gray-100 ${
+        user.isDisabled ? 'bg-gray-200 text-gray-500 opacity-60' : ''
+      }`}
+    >
+      <th>{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</th>
+      <td>
+        {user.avatarUrl ? (
+          <Image
+            src={user.avatarUrl}
+            alt={user.username}
+            width={40}
+            height={40}
+            className="rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-500">
+            N/A
+          </div>
+        )}
+      </td>
+      <td>{user.username}</td>
+      <td>{user.email}</td>
+      <td>{new Date(user.createdAt).toLocaleDateString()}</td>
 
->
-    <th>{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</th>
-    <td>
-      {user.avatarUrl ? (
-        <Image
-          src={user.avatarUrl}
-          alt={user.username}
-          width={40}
-          height={40}
-          className="rounded-full object-cover"
-        />
-      ) : (
-        <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-500">N/A</div>
-      )}
-    </td>
-    <td>{user.username}</td>
-    <td>{user.email}</td>
-    <td>{new Date(user.createdAt).toLocaleDateString()}</td>
-    <td>
-      <button
-  onClick={() => openChangeRoleModal(user, role)}
-  disabled={!!user.isDisabled}
-  className="btn btn-sm btn-primary"
->
-  Change Role
-</button>
-      <button
-  onClick={() => openDisableModal(user)}
-  className={`btn btn-sm ${user.isDisabled ? 'btn-warning' : 'btn-error'}`}
->
-  {user.isDisabled ? 'Enable' : 'Disable'}
-</button>
+      {/* SALARY COLUMN - only show amount */}
+      <td>
+        {user.latestSalary ? `৳${user.latestSalary}` : 'N/A'}
+      </td>
 
-    </td>
-  </tr>
-))}
+      {/* ACTION COLUMN - contains Change Role, Disable/Enable, and Pay */}
+      <td className="space-x-2">
+        <button
+          onClick={() => openChangeRoleModal(user, role)}
+          disabled={!!user.isDisabled}
+          className="btn btn-sm btn-primary"
+        >
+          Change Role
+        </button>
 
-          </tbody>
+        <button
+          onClick={() => openDisableModal(user)}
+          className={`btn btn-sm ${
+            user.isDisabled ? 'btn-warning' : 'btn-error'
+          }`}
+        >
+          {user.isDisabled ? 'Enable' : 'Disable'}
+        </button>
+
+        <button
+          className="btn btn-sm btn-success"
+          onClick={() => handleGenerateSalary(user.id)}
+          disabled={!!user.isDisabled}
+        >
+          Pay
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
+
         </table>
       </div>
     )}

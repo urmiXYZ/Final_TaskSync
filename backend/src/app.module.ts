@@ -22,6 +22,9 @@ import { ConfigModule } from '@nestjs/config';
 import { ConversationModule } from './chat/conversation.module';
 import { PersonalTask } from './user/entities/personal-task.entity';
 import { PersonalTaskModule } from './personal-task/personal-task.module';
+import { Salary } from './user/entities/salary.entity';
+import { SalaryModule } from './salary/salary.module';
+import { Task } from './user/entities/task.entity';
 
 @Module({
   imports: [
@@ -53,6 +56,7 @@ import { PersonalTaskModule } from './personal-task/personal-task.module';
         Project,
         TeamMember,
         PersonalTask, 
+        Salary,Task
       ],
       synchronize: true,
     }),
@@ -65,6 +69,7 @@ import { PersonalTaskModule } from './personal-task/personal-task.module';
     ProjectModule,
     ConversationModule,
     PersonalTaskModule,
+    SalaryModule
   ],
   providers: [AppService],
 })

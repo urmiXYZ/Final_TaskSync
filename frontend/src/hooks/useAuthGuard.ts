@@ -9,13 +9,16 @@ type Role = {
 };
 
 type User = {
-  id: string;
+  id: number;
   username: string;
   email: string;
-  role: Role;
-  avatarUrl?: string | null;
+  avatarUrl?: string;
+  createdAt: string;
   isDisabled?: boolean | null;
+  latestSalary?: number;  // add this line
+  role?: Role; 
 };
+
 
 export function useAuthGuard() {
   const router = useRouter();

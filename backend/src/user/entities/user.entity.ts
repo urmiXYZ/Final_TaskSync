@@ -10,6 +10,7 @@ import { Role } from './role.entity';
 import { Message } from './message.entity';
 import { ConversationParticipant } from './participants.entity';
 import { PersonalTask } from './personal-task.entity';
+import { Task } from './task.entity';
 
 @Entity('users')
 export class User {
@@ -52,4 +53,7 @@ isDisabled: boolean | null;
 
 @OneToMany(() => PersonalTask, (task) => task.user)
   personalTasks: PersonalTask[];
+
+  @OneToMany(() => Task, (task) => task.createdBy)
+tasks: Task[];
 }

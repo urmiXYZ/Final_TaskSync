@@ -27,8 +27,14 @@ const [successMsg2, setSuccessMsg2] = useState<string | null>(null);
 const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
 useEffect(() => {
-  setCurrentUser(user);
+  if (user) {
+    setCurrentUser({
+      ...user,
+      id: String(user.id), // explicitly convert to string
+    });
+  }
 }, [user]);
+
 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

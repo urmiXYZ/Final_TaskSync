@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import toast from 'react-hot-toast';
@@ -54,11 +54,7 @@ useEffect(() => {
     };
   }, [search]);
 
-  useEffect(() => {
-    fetchProjects();
-  }, [debouncedSearch]);
-
-  async function fetchProjects() {
+  const fetchProjects = useCallback(async () => {
   setLoading(true);
   try {
     let url = `${BACKEND_URL}/projects/all`;
@@ -69,7 +65,7 @@ useEffect(() => {
     }
 
     const res = await fetch(url, {
-      credentials: 'include', 
+      credentials: 'include',
     });
 
     if (!res.ok) {
@@ -84,7 +80,12 @@ useEffect(() => {
   } finally {
     setLoading(false);
   }
-}
+}, [debouncedSearch, BACKEND_URL]);
+
+useEffect(() => {
+  fetchProjects();
+}, [fetchProjects]);
+
 
 const handleSaveProject = (updatedProject: Project) => {
   setProjects((prevProjects) =>
