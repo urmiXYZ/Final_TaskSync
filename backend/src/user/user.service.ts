@@ -108,7 +108,7 @@ async requestPasswordReset(email: string) {
 
   const resetLink = `http://localhost:3000/reset-password?token=${token}`;
 
-  const previewLink = await this.emailService.sendPasswordResetEmail(user.email, resetLink, token);
+  const previewLink = await this.emailService.sendResetPasswordEmail(user.email, resetLink, token);
 
 
   return {

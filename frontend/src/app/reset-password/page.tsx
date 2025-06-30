@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 function ResetForm() {
   const router = useRouter();
@@ -12,19 +13,21 @@ function ResetForm() {
   const [timer, setTimer] = useState(180);
   const [email, setEmail] = useState(""); 
   const [showPassword, setShowPassword] = useState(false);
+const searchParams = useSearchParams();
 
   useEffect(() => {
+    const tokenFromUrl = searchParams.get("token");
+    if (tokenFromUrl) {
+      setToken(tokenFromUrl);
+    }
 const storedEmail = sessionStorage.getItem("resetEmail");
   if (storedEmail) setEmail(storedEmail);
     const interval = setInterval(() => {
       setTimer((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
-if (!storedEmail) {
-    setError("No email found. Please go back to Forgot Password.");
-    return;
-  }
+  
     return () => clearInterval(interval);
-  }, []);
+  }, [searchParams]);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60).toString().padStart(2, "0");
@@ -37,7 +40,7 @@ if (!storedEmail) {
     setMessage("");
     setError("");
 
-    if (!token.trim()) return setError("Please enter the reset token.");
+if (!token) return setError("Reset token is missing.");
     if (!password.trim()) return setError("Please enter the new password.");
 
     try {
@@ -84,16 +87,7 @@ if (!storedEmail) {
           Reset Password
         </h2>
 
-        <input
-          type="text"
-          placeholder="Enter reset token"
-          className="w-full p-2 mb-3 rounded border bg-gray-200 dark:bg-gray-700"
-          value={token}
-          onChange={(e) => {
-            setToken(e.target.value);
-            if (error) setError("");
-          }}
-        />
+        
   <div className="relative mb-3">
   <input
     type={showPassword ? "text" : "password"}

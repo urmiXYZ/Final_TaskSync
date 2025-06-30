@@ -1,15 +1,9 @@
-// salary.entity.ts
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  ManyToOne,
-  JoinColumn,
-  Column,
-  CreateDateColumn,
+  Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn
 } from 'typeorm';
-import { User } from 'src/user/entities/user.entity';
+import { User } from './user.entity';
 
-@Entity()
+@Entity('salaries')
 export class Salary {
   @PrimaryGeneratedColumn()
   id: number;
@@ -33,10 +27,9 @@ export class Salary {
   @Column({ default: false })
   isPaid: boolean;
 
+  @Column({ nullable: true })
+  stripeTransactionId: string;
+
   @CreateDateColumn()
   generatedAt: Date;
-
-  @Column({ nullable: true })
-stripeTransactionId: string;
-
 }

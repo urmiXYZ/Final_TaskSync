@@ -31,7 +31,7 @@ export class Task {
   @Column()
   projectId: number;
 
-  @ManyToOne(() => User, user => user.id, { nullable: false }) // Assigned manager
+  @ManyToOne(() => User, user => user.id, { nullable: false }) 
   @JoinColumn({ name: 'createdById' })
   createdBy: User;
 

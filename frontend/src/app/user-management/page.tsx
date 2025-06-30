@@ -7,6 +7,7 @@ import { useCallback } from 'react';
 import toast from 'react-hot-toast';
 import ConfirmAddUserModal from '../components/modals/ConfirmAddUserModal';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
+import Link from 'next/link';
 
 type User = {
   id: number;
@@ -431,27 +432,6 @@ useEffect(() => {
   if (dataLoading) return <DashboardLayout><div>Loading users...</div></DashboardLayout>;
   if (error) return <DashboardLayout><div className="text-red-600">Error: {error}</div></DashboardLayout>;
 
-const handleGenerateSalary = async (userId: number) => {
-  try {
-    const res = await fetch(`http://localhost:3001/salary/generate/${userId}`, {
-      method: 'POST',
-      credentials: 'include',
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || 'Failed to generate salary');
-    }
-
-    const data = await res.json();
-    toast.success(`Paid ৳${data.totalAmount} to user.`);
-    fetchUsers(); // Refresh user list if needed
-  } catch (error) {
-    console.error(error);
-    toast.error('Failed to pay salary');
-  }
-};
-
 
 
 
@@ -533,13 +513,14 @@ const renderTable = (
           {user.isDisabled ? 'Enable' : 'Disable'}
         </button>
 
-        <button
-          className="btn btn-sm btn-success"
-          onClick={() => handleGenerateSalary(user.id)}
-          disabled={!!user.isDisabled}
-        >
-          Pay
-        </button>
+        <Link
+      href={`/salary?userId=${user.id}`}
+      className={`btn btn-sm btn-success ${user.isDisabled ? 'opacity-50 pointer-events-none' : ''}`}
+      tabIndex={user.isDisabled ? -1 : 0}
+      aria-disabled={user.isDisabled ? true : false}
+    >
+      Pay
+    </Link>
       </td>
     </tr>
   ))}

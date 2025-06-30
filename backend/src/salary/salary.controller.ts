@@ -1,17 +1,27 @@
-import {
-  Controller,
-  Post,
-  Param,
-  ParseIntPipe,
-  Get,
-  Body,
-  Patch,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, ParseIntPipe, Patch } from '@nestjs/common';
 import { SalaryService } from './salary.service';
 
 @Controller('salary')
 export class SalaryController {
-  constructor(private readonly salaryService: SalaryService) {}
+  constructor(private salaryService: SalaryService) {}
+
+  @Get('eligible')
+  getEligibleEmployeesAndManagersWithSalary() {
+    return this.salaryService.getEligibleEmployeesAndManagersWithSalary();
+  }
+
+@Post('initiate')
+async initiatePayment(@Body() body: { userId: number; amount: number }) {
+  const { userId, amount } = body;
+  const clientSecret = await this.salaryService.initiatePayment(userId, amount);
+  return { clientSecret }; 
+}
+
+
+  @Post('confirm')
+  confirmPayment(@Body() body: { intentId: string }) {
+    return this.salaryService.confirmPayment(body.intentId);
+  }
 
   @Post('generate/:userId')
   generateSalary(@Param('userId', ParseIntPipe) userId: number) {
@@ -28,7 +38,6 @@ export class SalaryController {
     return this.salaryService.markSalaryAsPaid(id, body.transactionId);
   }
 
-  // salary.controller.ts
 @Get('current/:userId')
 getCurrentSalary(@Param('userId', ParseIntPipe) userId: number) {
   return this.salaryService.getLiveSalary(userId);
@@ -38,6 +47,4 @@ getCurrentSalary(@Param('userId', ParseIntPipe) userId: number) {
 getLatestSalary(@Param('userId', ParseIntPipe) userId: number) {
   return this.salaryService.getLatestSalaryForUser(userId);
 }
-
-
 }

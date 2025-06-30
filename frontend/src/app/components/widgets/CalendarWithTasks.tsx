@@ -5,12 +5,13 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { format, isSameDay, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
+import { useDrop } from 'react-dnd';
 
 type PersonalTask = {
   id: number;
   title: string;
   description?: string;
-  dueDate: string; // 'YYYY-MM-DD'
+  dueDate: string;
   time?: string;
 };
 
@@ -19,19 +20,16 @@ export default function PersonalTaskCalendar() {
   const [tasks, setTasks] = useState<PersonalTask[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Form states for modal
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [time, setTime] = useState('');
 
-  // Fetch tasks from backend
   async function fetchTasks() {
     try {
       const res = await fetch("http://localhost:3001/personal-tasks", {
         credentials: "include",
       });
-
       if (!res.ok) throw new Error('Failed to load tasks');
       const data: PersonalTask[] = await res.json();
       setTasks(data);
@@ -55,7 +53,6 @@ export default function PersonalTaskCalendar() {
     }
   }
 
-  // Highlight days with tasks
   function tileClassName({ date, view }: { date: Date; view: string }) {
     if (view === 'month') {
       const hasTask = tasks.some((task) => isSameDay(parseISO(task.dueDate), date));
@@ -98,34 +95,81 @@ export default function PersonalTaskCalendar() {
     }
   }
 
+  async function handleDropOnDate(taskId: number, newDate: Date) {
+    try {
+      const res = await fetch(`http://localhost:3001/personal-tasks/${taskId}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ dueDate: format(newDate, 'yyyy-MM-dd') }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update task');
+      toast.success('Task date updated!');
+      fetchTasks();
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
+  }
+
+  function DroppableDateTile({ date }: { date: Date }) {
+    const [, drop] = useDrop(() => ({
+      accept: 'TASK',
+      drop: (item: { id: number }) => {
+        handleDropOnDate(item.id, date);
+      },
+    }));
+
+    const hasTask = tasks.some(t => isSameDay(parseISO(t.dueDate), date));
+
+    return drop(
+  <div
+    className={`h-6 w-6 mx-auto rounded-full ${
+      hasTask ? 'bg-blue-400' : ''
+    } hover:ring hover:ring-blue-500`}
+  />
+);
+  }
+
   return (
-    <div className="flex flex-col md:flex-row gap-6">
-      <div className="bg-white rounded-lg shadow-lg p-4 w-full md:w-[350px]">
-        <button
-          className="btn btn-primary mb-4 w-full"
-          onClick={() => setShowAddModal(true)}
-        >
-          + Add Personal Task
-        </button>
+    <div className="bg-white rounded-lg shadow-lg p-4">
+  <div style={{ width: '600px', maxWidth: '100%' }}>
+    <Calendar
+      onChange={onChangeHandler}
+      value={selectedDate}
+      tileClassName={tileClassName}
+      tileContent={({ date, view }) =>
+        view === 'month' ? <DroppableDateTile date={date} /> : null
+      }
+    />
+  </div>
 
-        <Calendar
-          onChange={onChangeHandler}
-          value={selectedDate}
-          tileClassName={tileClassName}
-        />
-      </div>
 
+      {/* Task List */}
       <div className="bg-white rounded-lg shadow-lg p-4 flex-1">
-        <h2 className="text-lg font-semibold mb-2">
-          Tasks for {format(selectedDate ?? new Date(), 'PPP')}
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">
+            Tasks for {format(selectedDate ?? new Date(), 'PPP')}
+          </h2>
+          <button
+            className="btn btn-sm btn-primary"
+            onClick={() => setShowAddModal(true)}
+          >
+            + Add Task
+          </button>
+        </div>
 
         {tasksForSelectedDate.length === 0 ? (
           <p className="text-sm text-gray-500">No tasks scheduled.</p>
         ) : (
           <ul className="space-y-2">
             {tasksForSelectedDate.map((task) => (
-              <li key={task.id} className="p-3 border rounded-lg bg-gray-50">
+              <li
+                key={task.id}
+                className="p-3 border rounded-lg bg-gray-50"
+              >
                 <div className="font-medium">{task.title}</div>
                 {task.time && <div className="text-sm text-gray-500">{task.time}</div>}
                 {task.description && (

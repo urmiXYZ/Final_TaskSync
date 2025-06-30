@@ -14,7 +14,8 @@ type Task = {
 export default function DashboardPage() {
   useAuthGuard();
 const [tasks, setTasks] = useState<Task[]>([]);
-  const [stats, setStats] = useState({
+  
+const [stats, setStats] = useState({
     totalManagers: 0,
     totalEmployees: 0,
     totalUsers: 0,
@@ -43,9 +44,32 @@ const [tasks, setTasks] = useState<Task[]>([]);
       }
     };
 
+    
     fetchStats();
     fetchTasks();
   }, []);
+
+async function onRemoveTasks(taskIds: number[]) {
+  try {
+    for (const id of taskIds) {
+      const res = await fetch(`http://localhost:3001/personal-tasks/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        console.error(`Failed to delete task id=${id}`);
+      }
+    }
+    // Update local state after deletion
+    setTasks(prev => prev.filter(task => !taskIds.includes(task.id)));
+  } catch (error) {
+    console.error("Error deleting tasks:", error);
+  }
+}
+
+
+
+
 
   const managerPercent = stats.totalUsers > 0
     ? Math.round((stats.totalManagers / stats.totalUsers) * 100)
@@ -127,10 +151,9 @@ const [tasks, setTasks] = useState<Task[]>([]);
         
 
       </div>
-      <div className="bg-white rounded-lg shadow-lg p-4 overflow-x-auto">
+      <div className="p-4">
         <h2 className="text-xl font-semibold mb-4">Personal Task List</h2>
-        {/* Pass your tasks here */}
-        <TaskTable tasks={tasks} />
+<TaskTable tasks={tasks} onRemoveTasks={onRemoveTasks} />
       </div>
     </DashboardLayout>
   );
