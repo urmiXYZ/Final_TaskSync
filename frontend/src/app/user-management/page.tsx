@@ -513,14 +513,7 @@ const renderTable = (
           {user.isDisabled ? 'Enable' : 'Disable'}
         </button>
 
-        <Link
-      href={`/salary?userId=${user.id}`}
-      className={`btn btn-sm btn-success ${user.isDisabled ? 'opacity-50 pointer-events-none' : ''}`}
-      tabIndex={user.isDisabled ? -1 : 0}
-      aria-disabled={user.isDisabled ? true : false}
-    >
-      Pay
-    </Link>
+       
       </td>
     </tr>
   ))}
@@ -555,6 +548,13 @@ return (
           Add Employee
         </button>
         <div className="w-6" />
+        <Link
+  href="/salary"
+  className="btn btn-success"
+>
+  Pay Salary
+</Link>
+
         <button
           className="btn btn-sm btn-outline"
           onClick={() => exportCSV('manager')}
@@ -616,25 +616,26 @@ return (
 
 </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 mt-10">
-        <div className="flex-1">
-          {renderDivider('Managers', 'divider-primary')}
-{renderTable('', paginatedManagers, managersPage, 'manager')}
-<p className="text-sm text-gray-500 mt-2 text-center">
-  {renderEntryInfo(managersPage, managers.length)}
-</p>
-          {renderPagination(managers.length, managersPage, setManagersPage)}
-        </div>
+      <div className="flex flex-col gap-6 mt-10">
+  <div className="flex-1">
+    {renderDivider('Managers', 'divider-primary')}
+    {renderTable('', paginatedManagers, managersPage, 'manager')}
+    <p className="text-sm text-gray-500 mt-2 text-center">
+      {renderEntryInfo(managersPage, managers.length)}
+    </p>
+    {renderPagination(managers.length, managersPage, setManagersPage)}
+  </div>
 
-        <div className="flex-1">
-          {renderDivider('Employees', 'divider-secondary')}
-        {renderTable('', paginatedEmployees, employeesPage, 'employee')}
-        <p className="text-sm text-gray-500 mt-2 text-center">
-  {renderEntryInfo(employeesPage, employees.length)}
-</p>
-          {renderPagination(employees.length, employeesPage, setEmployeesPage)}
-        </div>
-      </div>
+  <div className="flex-1">
+    {renderDivider('Employees', 'divider-secondary')}
+    {renderTable('', paginatedEmployees, employeesPage, 'employee')}
+    <p className="text-sm text-gray-500 mt-2 text-center">
+      {renderEntryInfo(employeesPage, employees.length)}
+    </p>
+    {renderPagination(employees.length, employeesPage, setEmployeesPage)}
+  </div>
+</div>
+
     </div>
 
     {showModal && modalRole && (
